@@ -1,6 +1,29 @@
 import streamlit as st
 import joblib
 import pandas as pd
+import boto3
+import os
+
+# ── Download Model from S3 if not present locally ──────────
+def download_model_from_s3():
+    bucket_name = "mlops-titanic-dushyant"   # ← your S3 bucket name
+    s3_key = "model.joblib"                  # path inside the bucket
+    local_path = "models/model.joblib"
+
+    if not os.path.exists(local_path):
+        st.info("Downloading model from S3...")
+        os.makedirs("models", exist_ok=True)
+
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+            region_name="us-east-1"
+        )
+        s3.download_file(bucket_name, s3_key, local_path)
+        st.success("Model downloaded successfully!")
+
+download_model_from_s3()
 
 # ── Load Model ─────────────────────────────────────────────
 model = joblib.load("models/model.joblib")
@@ -58,9 +81,9 @@ if st.button("🔮 Predict Survival"):
     st.divider()
 
     if prediction == 1:
-        st.success(f"✅ This passenger would have **SURVIVED**")
+        st.success("✅ This passenger would have **SURVIVED**")
     else:
-        st.error(f"❌ This passenger would **NOT** have survived")
+        st.error("❌ This passenger would **NOT** have survived")
 
     st.write(f"**Survival Probability:** {probability[1]:.1%}")
     st.write(f"**Non-Survival Probability:** {probability[0]:.1%}")
